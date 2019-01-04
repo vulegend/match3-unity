@@ -14,7 +14,6 @@ public class GameMasterInspector : Editor {
     SerializedProperty height;
     SerializedProperty colorVariations;
     SerializedProperty swapSpeed;
-    SerializedProperty tilePrefab;
     SerializedProperty totalIterations;
     SerializedProperty simSpeed;
     #endregion
@@ -25,7 +24,6 @@ public class GameMasterInspector : Editor {
         height = serializedObject.FindProperty("Height");
         colorVariations = serializedObject.FindProperty("ColorVariations");
         swapSpeed = serializedObject.FindProperty("SwapSpeed");
-        tilePrefab = serializedObject.FindProperty("TilePrefab");
         totalIterations = serializedObject.FindProperty("Iterations");
         simSpeed = serializedObject.FindProperty("SimulationSpeed");
     }
@@ -36,7 +34,6 @@ public class GameMasterInspector : Editor {
         EditorGUILayout.PropertyField(height);
         EditorGUILayout.PropertyField(colorVariations);
         EditorGUILayout.PropertyField(swapSpeed);
-        EditorGUILayout.PropertyField(tilePrefab);      
         if (GUILayout.Button("Randomize field"))
         {
             ((GameMaster)target).InitializeGameField();

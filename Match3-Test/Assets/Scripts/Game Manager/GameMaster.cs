@@ -19,6 +19,7 @@ public class GameMaster : MonoBehaviour {
     //Swap speed for the movement animations. Assignable from GameMaster inspector window
     public float SwapSpeed = 200f;
     //The main game matrix that stores every color as an int. Used to find matches and control grid shape
+    //Grid tile matrix codes are as follows : -1 Empty time, 0 Blocking tile, 1..N Color tiles
     public int[,] GameField;
     //The main tile indexer. Used for tile movement and animations
     public List<Tile> GameTiles;
@@ -543,15 +544,24 @@ public class GameMaster : MonoBehaviour {
 
         for(int i = 0; i < missingTiles; i++)
         {
+
+            int offsetTest = 0;
+
+            for(int y = lastAssignableY-i; y >= 0; y--)
+            {
+                if (GameField[column, y] == 0)
+                    offsetTest++;
+            }
+
             //Get the object from the pool
             GameObject newTile = _tilePool.Dequeue();
             Tile tile = newTile.GetComponent<Tile>();
             tile.gameObject.SetActive(true);
             tile.RectTransformTile.anchoredPosition = new Vector2(column*50f, (i+1) * 50f);
-            tile.Init(column, lastAssignableY - i, false);
+            tile.Init(column, lastAssignableY - i - offsetTest, false);
             tile.IsEmpty = false;
             tile.AssignColor(PickColorForNewColumn(tile));
-            GameField[column, lastAssignableY - i] = tile.TileColor;
+            GameField[column, lastAssignableY - i - offsetTest] = tile.TileColor;
             toReturn.Add(tile);
         }
 
@@ -580,23 +590,28 @@ public class GameMaster : MonoBehaviour {
                     Vector2 bottomRight = new Vector2(x + 1, y + 1);
                     Vector2 bottomLeft = new Vector2(x - 1, y + 1);
 
+                    //Check if the tiles are playable for the pattern
+                    Vector2 top = new Vector2(x, y - 2);
+                    Vector2 bottom = new Vector2(x, y + 1);
+                   
+
                     //Check if the positions are on the grid and if the color matches. If one match is found, return straight away
-                    if(topLeft.IsOnGrid(Width,Height) && GameField[(int)topLeft.x,(int)topLeft.y] == color)
+                    if(top.IsOnGrid(Width,Height) && GameField[(int)top.x,(int)top.y] > 0 && topLeft.IsOnGrid(Width,Height) && GameField[(int)topLeft.x,(int)topLeft.y] == color)
                     {
                         return true;
                     }
 
-                    if (topRight.IsOnGrid(Width, Height) && GameField[(int)topRight.x, (int)topRight.y] == color)
+                    if (top.IsOnGrid(Width, Height) && GameField[(int)top.x, (int)top.y] > 0 && topRight.IsOnGrid(Width, Height) && GameField[(int)topRight.x, (int)topRight.y] == color)
                     {
                         return true;
                     }
 
-                    if (bottomRight.IsOnGrid(Width, Height) && GameField[(int)bottomRight.x, (int)bottomRight.y] == color)
+                    if (bottom.IsOnGrid(Width, Height) && GameField[(int)bottom.x, (int)bottom.y] > 0 && bottomRight.IsOnGrid(Width, Height) && GameField[(int)bottomRight.x, (int)bottomRight.y] == color)
                     {
                         return true;
                     }
 
-                    if (bottomLeft.IsOnGrid(Width, Height) && GameField[(int)bottomLeft.x, (int)bottomLeft.y] == color)
+                    if (bottom.IsOnGrid(Width, Height) && GameField[(int)bottom.x, (int)bottom.y] > 0 && bottomLeft.IsOnGrid(Width, Height) && GameField[(int)bottomLeft.x, (int)bottomLeft.y] == color)
                     {
                         return true;
                     }
@@ -621,25 +636,29 @@ public class GameMaster : MonoBehaviour {
                     Vector2 bottomRight = new Vector2(x + 1, y + 1);
                     Vector2 bottomLeft = new Vector2(x - 2, y + 1);
 
-                    if (topLeft.IsOnGrid(Width, Height) && GameField[(int)topLeft.x, (int)topLeft.y] == color)
+                    //Check if the tiles are playable for the pattern
+                    Vector2 right = new Vector2(x+1, y);
+                    Vector2 left = new Vector2(x-1, y);
+
+                    if (right.IsOnGrid(Width,Height) && GameField[(int)right.x,(int)right.y] > 0 && topLeft.IsOnGrid(Width, Height) && GameField[(int)topLeft.x, (int)topLeft.y] == color)
                     {
                         toReturn = true;
                         break;
                     }
 
-                    if (topRight.IsOnGrid(Width, Height) && GameField[(int)topRight.x, (int)topRight.y] == color)
+                    if (right.IsOnGrid(Width, Height) && GameField[(int)right.x, (int)right.y] > 0 &&  topRight.IsOnGrid(Width, Height) && GameField[(int)topRight.x, (int)topRight.y] == color)
                     {
                         toReturn = true;
                         break;
                     }
 
-                    if (bottomRight.IsOnGrid(Width, Height) && GameField[(int)bottomRight.x, (int)bottomRight.y] == color)
+                    if (left.IsOnGrid(Width, Height) && GameField[(int)left.x, (int)left.y] > 0 && bottomRight.IsOnGrid(Width, Height) && GameField[(int)bottomRight.x, (int)bottomRight.y] == color)
                     {
                         toReturn = true;
                         break;
                     }
 
-                    if (bottomLeft.IsOnGrid(Width, Height) && GameField[(int)bottomLeft.x, (int)bottomLeft.y] == color)
+                    if (left.IsOnGrid(Width, Height) && GameField[(int)left.x, (int)left.y] > 0 && bottomLeft.IsOnGrid(Width, Height) && GameField[(int)bottomLeft.x, (int)bottomLeft.y] == color)
                     {
                         toReturn = true;
                         break;
@@ -841,7 +860,10 @@ public class GameMaster : MonoBehaviour {
             switchWithTile = GameTiles.Find(o => o.Y == randomStartTile.Y + offset && o.X == randomStartTile.X);
         }
 
-        SimMove(randomStartTile, switchWithTile);
+        if (!switchWithTile.IsBlocking)
+            SimMove(randomStartTile, switchWithTile);
+        else
+            PickTiles();
     }
 
     /// <summary>
